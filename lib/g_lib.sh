@@ -52,10 +52,18 @@ g_ensure_in_path() { # [ --end ] path...
 	done
 }
 
+g_yorn_prompt() {
+	local prompt=$1; shift
+	if g_zsh; then IFS= read "$@" yorn\?"$prompt "
+	else           IFS= read "$@" -p    "$prompt " yorn
+	fi
+	(( $(g_col) > 1 )) && echo
+}
+
 g_do_all=
 yorn() {
 	local quit_to= def=yn def_colr=cyan g_all=a do_it= res= cont= comment= pre_comment= cont_ok= no_ok= any_key= hit=
-	local ignore_all= cd_in= timeout= timeout_arg= timeout_txt= timeout_yorn=n quit=q str= str_def= key1=1
+	local ignore_all= cd_in= timeout= timeout_arg= timeout_txt= timeout_yorn=n quit=q str= str_def= key1_flag=-k key1=1 twice=
 	while [[ -n $1 && $1 == --* ]]; do
 		if   [[ $1 == --           ]]; then shift; break
 		elif [[ $1 == --any        ]]; then any_key=y
@@ -72,6 +80,7 @@ yorn() {
 		elif [[ $1 == --no-quit    ]]; then quit=
 		elif [[ $1 == --do-all     ]]; then g_do_all=1; [[ -z $2 ]] && return
 		elif [[ $1 == --reset-all  ]]; then g_do_all=;  [[ -z $2 ]] && return
+		elif [[ $1 == --twice      ]]; then twice=1
 		elif [[ $1 == --str        ]]; then str=1; str_def=$2; key1=; shift  # default for (blank) input string, else allow `string<Enter>`; ' ' triggers blank returned ($yorn)
 		elif [[ $1 == --quit-to    ]]; then quit_to=$2; shift
 		elif [[ $1 == --timeout    ]]; then timeout=$2; shift
@@ -80,11 +89,12 @@ yorn() {
 		fi
 		shift
 	done
+	[[ -n $key1 ]] && ! g_zsh && key1_flag=-n
 	if [[ -n $timeout ]]; then timeout_arg=-t; timeout_txt="$(g_colr yellow " ${timeout}s")"; fi
 	if [[ -n $g_do_all && -z $ignore_all && -z $str ]]; then
 		if [[ ${def:0:1} == n ]]; then
 			res=1	# skip --no when 'all'
-			g_info SKIP:  "$pre_comment$comment"$(g_colr bright_white "$@")
+			g_info			"$(g_colr yellow SKIP): $pre_comment$comment$(g_colr yellow "$@")"
 		else
 			res=0
 			if [[ -n $do_it ]]; then	g_info EXEC: "$pre_comment$comment"$(g_colr bright_white "$@")
@@ -100,9 +110,7 @@ yorn() {
 			timeout_yorn=$str_def
 		fi
 		[[ -n $any_key ]] && hit="$(g_colr -r bright_blue hit any key or: $(g_colr cyan hq))"
-		if g_zsh; then IFS= read $timeout_arg $timeout ${key1:+-k} $key1 yorn\?"$(g_info "$pre_comment$comment""$@") [$hit]$timeout_txt${str:+ ?} "
-		else           IFS= read $timeout_arg $timeout ${key1:+-n} $key1 -p    "$(g_info "$pre_comment$comment""$@") [$hit]$timeout_txt${str:+ ?} " yorn
-		fi
+		g_yorn_prompt "$(g_info "$pre_comment$comment""$@") [$hit]$timeout_txt${str:+ ?}" $timeout_arg $timeout $key1_flag $key1
 		if [[ -n $timeout && $? -ne 0 ]]; then yorn=$timeout_yorn; fi
 		if [[ -n $str ]]; then
 			if   [[ $yorn == " " ]]; then yorn=
@@ -110,7 +118,6 @@ yorn() {
 			fi
 			return
 		fi
-		(( $(g_col) > 1 )) && echo
 		[[ -n $any_key && :h:q: != *:$yorn:* ]] && return 0
 		if [[ -z $yorn || $yorn == " " || $yorn == $'\n' ]]; then yorn=${def:0:1}; fi
 		if   [[ -n $quit  && $yorn == q      ]]; then [[ -z $quit_to ]] && exit 0; $quit_to; exit 0
@@ -118,6 +125,12 @@ yorn() {
 		elif [[ $yorn == h                   ]]; then g_info "Hit: $(g_colr bright_magenta y)=yes, $(g_colr bright_magenta n)=no, $(g_colr bright_magenta a)=all (accept default for all subsequent), $(g_colr bright_magenta q)=quit"
 		elif [[ $yorn == n                   ]]; then res=1; if [[ -n $no_ok ]]; then do_it=; res=0; fi
 		elif [[ $yorn == y                   ]]; then res=0
+		fi
+		if [[ -n $res && $res == 0 && -n $twice ]]; then
+			local save_yorn=$yorn
+			g_yorn_prompt "$(g_info "$(g_colr yellow "Hit 'c' to confirm:")" "$pre_comment$comment""$@") [chq]" $key1_flag $key1
+			if [[ $yorn != c ]]; then res=; fi
+			yorn=$save_yorn
 		fi
 	done
 	if [[ -n $do_it && $res == 0 ]]; then
