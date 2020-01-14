@@ -10,7 +10,7 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
     if [[ -t 0 ]]; then
         col=$'\e['$(perl -E '$_="0;";$c=shift @ARGV;%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0);$_="1;" if $c =~ /^[A-Z]/ and $c=lc $c or $c =~ s/^bright_//;$_.=10+$c{$1}.";" if $c =~ s/_on_(\w+)$// and defined $c{$1};if(defined $c{$c}){$_.=$c{$c}}else{$_=$c}say' $col)m
         if [[ -n $recurse ]]; then set -- "${@//$rst/$col}"; fi
-        echo -e "$col""$@""$rst"
+        if (( MAKELEVEL > 0 )); then echo "$col""$@""$rst"; else echo -e "$col""$@""$rst"; fi
     else
         echo "$@"
     fi
@@ -26,16 +26,22 @@ g_opts()    { while [[ -n $1 ]]; do if [[ $1 == host ]]; then g_ts_host=$myHOST;
 g_zsh()     { [[ -n ${ZSH_NAME:-} ]]; }
 g_row_col() { local X= R= C=; if g_zsh; then IFS=';[' read -sdR X\?$'\E[6n' R C; else IFS=';[' read -sdR -p $'\E[6n' X R C; fi; echo $R $C; }
 g_col()     { local rc="$(g_row_col)"; echo ${rc#* }; }
-g_cont()    { local res=$1 arg=--no res_txt=; shift; if [[ $res == -y ]]; then arg=; res=$1; shift; fi; if [[ $res != 0 ]]; then res_txt=" after $(g_colr bright_white_on_red error code $res)"; else arg=; fi; yorn --ignore-all $arg "$@" "Continue$res_txt" || exit $res; }
+g_cont()    { local res=$1 arg=--no res_txt=; shift; if [[ $res == -y ]]; then arg=; res=$1; shift; fi; if [[ $res != 0 ]]; then res_txt=" after $(g_colr bright_white_on_red error code $res)"; else arg=; fi; yorn --ignore-all $arg "$@" "Continue$res_txt" || g_exit $res; }
 
+g_exit() {
+    local res=$1; shift
+    [[ -n $g_lib_nonfatal ]] && return $res
+    exit $res
+}
 g_die() {
     local res=$1; shift
     g_err "$@"
-    exit $res
+    g_exit $res
 }
 
-g_ensure_env() { local e=;for e; do [[ -z ${!e} ]] && g_die 2 $e unset; done; }
-g_ensure_dir() { local d=;for d; do [[ -d $d ]] || mkdir -p $d || g_die 2 $d failed; done; }
+g_ensure_env()  { local e=;for e; do if g_zsh; then [[ -n ${(P)e} ]] && continue; else [[ -n ${!e} ]] && continue; fi; g_die 2 $e unset; done; }
+g_ensure_hash() { local e=;for e; do eval [[ -n \${$e[@]} ]] || g_die 2 $e unset; done; }
+g_ensure_dir()  { local d=;for d; do [[ -d $d             ]] || mkdir -p $d || g_die 2 $d failed; done; }
 g_ensure_in_path() { # [ --end ] path...
 	local end_ok= p=
 	while true; do
@@ -120,7 +126,7 @@ yorn() {
 		fi
 		[[ -n $any_key && :h:q: != *:$yorn:* ]] && return 0
 		if [[ -z $yorn || $yorn == " " || $yorn == $'\n' ]]; then yorn=${def:0:1}; fi
-		if   [[ -n $quit  && $yorn == q      ]]; then [[ -z $quit_to ]] && exit 0; $quit_to; exit 0
+		if   [[ -n $quit  && $yorn == q      ]]; then [[ -z $quit_to ]] && g_exit 0; $quit_to; g_exit 0
 		elif [[ -n $g_all && $yorn == $g_all ]]; then g_do_all=yes; res=0
 		elif [[ $yorn == h                   ]]; then g_info "Hit: $(g_colr bright_magenta y)=yes, $(g_colr bright_magenta n)=no, $(g_colr bright_magenta a)=all (accept default for all subsequent), $(g_colr bright_magenta q)=quit"
 		elif [[ $yorn == n                   ]]; then res=1; if [[ -n $no_ok ]]; then do_it=; res=0; fi
