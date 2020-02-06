@@ -2,6 +2,11 @@
 
 # for licence/copyright, see: https://github.com/gedge/misc
 
+# global vars:
+#   g_lib_loaded       - has this file been loaded
+#   g_ts_host          - used internally (when `g_opts host` in effect)
+#   g_lib_nonfatal     - do not exit when g_die is used (return failure)
+
 if [[ -z ${g_lib_loaded:-} ]]; then
 g_lib_loaded=1
 
@@ -22,7 +27,7 @@ g_info2()   { g_info "$@" >&2; } # DEPRECATED
 g_err()     { g_ts "$(g_colr -r RED    ERROR "$@")" >&2; }
 g_warn()    { g_ts "$(g_colr -r YELLOW WARN  "$@")" >&2; }
 g_log()     { g_ts "$@"; }
-g_opts()    { while [[ -n $1 ]]; do if [[ $1 == host ]]; then g_ts_host=$myHOST; fi; shift; done; }
+g_opts()    { while [[ -n $1 ]]; do if [[ $1 == host ]]; then g_ts_host=$myHOST; else g_die 2 Bad g_opts: $1; fi; shift; done; }
 g_zsh()     { [[ -n ${ZSH_NAME:-} ]]; }
 g_row_col() { local X= R= C=; if g_zsh; then IFS=';[' read -sdR X\?$'\E[6n' R C; else IFS=';[' read -sdR -p $'\E[6n' X R C; fi; echo $R $C; }
 g_col()     { local rc="$(g_row_col)"; echo ${rc#* }; }
@@ -68,7 +73,7 @@ g_yorn_prompt() {
 
 g_do_all=
 yorn() {
-	local quit_to= def=yn def_colr=cyan g_all=a do_it= res= cont= comment= pre_comment= cont_ok= no_ok= any_key= hit=
+	local quit_to= def=yn def_colr=cyan not_def_colr=bright_blue g_all=a do_it= res= cont= comment= pre_comment= cont_ok= no_ok= any_key= hit=
 	local ignore_all= cd_in= timeout= timeout_arg= timeout_txt= timeout_yorn=n quit=q str= str_def= key1_flag=-k key1=1 twice=
 	while [[ -n $1 && $1 == --* ]]; do
 		if   [[ $1 == --           ]]; then shift; break
@@ -110,12 +115,12 @@ yorn() {
 	fi
 	while [[ -z $res ]]; do
 		if [[ -z $str ]]; then
-			hit="$(g_colr -r bright_blue "$(g_colr $def_colr ${def:0:1})${def:1}${g_all}h${quit}")"
+			hit="$(g_colr -r $not_def_colr "$(g_colr $def_colr ${def:0:1})${def:1}${g_all}h${quit}")"
 		else
-			hit="def: "$(g_colr -r bright_blue "$str_def")
+			hit="def: "$(g_colr -r $not_def_colr "$str_def")
 			timeout_yorn=$str_def
 		fi
-		[[ -n $any_key ]] && hit="$(g_colr -r bright_blue hit any key or: $(g_colr cyan hq))"
+		[[ -n $any_key ]] && hit="$(g_colr -r $not_def_colr hit any key or: $(g_colr cyan hq))"
 		g_yorn_prompt "$(g_info "$pre_comment$comment""$@") [$hit]$timeout_txt${str:+ ?}" $timeout_arg $timeout $key1_flag $key1
 		if [[ -n $timeout && $? -ne 0 ]]; then yorn=$timeout_yorn; fi
 		if [[ -n $str ]]; then
@@ -134,7 +139,7 @@ yorn() {
 		fi
 		if [[ -n $res && $res == 0 && -n $twice ]]; then
 			local save_yorn=$yorn
-			g_yorn_prompt "$(g_info "$(g_colr yellow "Hit 'c' to confirm:")" "$pre_comment$comment""$@") [chq]" $key1_flag $key1
+			g_yorn_prompt "$(g_info "$(g_colr -r yellow "Hit '$(g_colr -r bright_yellow c)' to confirm:")" "$pre_comment$comment""$@") [$(g_colr $def_colr n)$(g_colr $not_def_colr c${quit})]" $key1_flag $key1
 			if [[ $yorn != c ]]; then res=; fi
 			yorn=$save_yorn
 		fi
