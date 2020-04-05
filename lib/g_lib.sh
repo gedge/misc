@@ -74,7 +74,7 @@ g_yorn_prompt() {
 g_do_all=
 yorn() {
 	local quit_to= def=yn def_colr=cyan not_def_colr=bright_blue g_all=a do_it= res= cont= comment= pre_comment= cont_ok= no_ok= any_key= hit=
-	local ignore_all= cd_in= timeout= timeout_arg= timeout_txt= timeout_yorn=n quit=q str= str_def= key1_flag=-k key1=1 twice=
+	local ignore_all= cd_in= timeout= timeout_arg= timeout_txt= timeout_yorn=n quit=q quit_res=0 str= str_def= key1_flag=-k key1=1 twice=
 	while [[ -n $1 && $1 == --* ]]; do
 		if   [[ $1 == --           ]]; then shift; break
 		elif [[ $1 == --any        ]]; then any_key=y
@@ -93,6 +93,7 @@ yorn() {
 		elif [[ $1 == --reset-all  ]]; then g_do_all=;  [[ -z $2 ]] && return
 		elif [[ $1 == --twice      ]]; then twice=1
 		elif [[ $1 == --str        ]]; then str=1; str_def=$2; key1=; shift  # default for (blank) input string, else allow `string<Enter>`; ' ' triggers blank returned ($yorn)
+		elif [[ $1 == --quit-res   ]]; then quit_res=$2; shift
 		elif [[ $1 == --quit-to    ]]; then quit_to=$2; shift
 		elif [[ $1 == --timeout    ]]; then timeout=$2; shift
 		elif [[ $1 == --timeout-ok ]]; then timeout=$2; timeout_yorn=y; shift
@@ -131,7 +132,7 @@ yorn() {
 		fi
 		[[ -n $any_key && :h:q: != *:$yorn:* ]] && return 0
 		if [[ -z $yorn || $yorn == " " || $yorn == $'\n' ]]; then yorn=${def:0:1}; fi
-		if   [[ -n $quit  && $yorn == q      ]]; then [[ -z $quit_to ]] && g_exit 0; $quit_to; g_exit 0
+		if   [[ -n $quit  && $yorn == $quit  ]]; then [[ -z $quit_to ]] && g_exit $quit_res; $quit_to; g_exit $quit_res
 		elif [[ -n $g_all && $yorn == $g_all ]]; then g_do_all=yes; res=0
 		elif [[ $yorn == h                   ]]; then g_info "Hit: $(g_colr bright_magenta y)=yes, $(g_colr bright_magenta n)=no, $(g_colr bright_magenta a)=all (accept default for all subsequent), $(g_colr bright_magenta q)=quit"
 		elif [[ $yorn == n                   ]]; then res=1; if [[ -n $no_ok ]]; then do_it=; res=0; fi
