@@ -1,8 +1,6 @@
-misc
-=======
+# misc
 
-g_lib.sh
-===
+## g_lib.sh
 
 A shell (bash- and zsh-compatible) library largely for:
 
@@ -11,8 +9,8 @@ A shell (bash- and zsh-compatible) library largely for:
 
 Put the file on your `PATH` and then use `source g_lib.sh` in your shell.
 
-### Licence
+## Licence
 
-Copyright © 2018-2019, Geraint "Gedge" Edwards
+Copyright © 2018-2022, Geraint "Gedge" Edwards
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details.
