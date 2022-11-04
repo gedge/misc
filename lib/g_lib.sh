@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20221014
+# version: 1.0.20221104
 # for licence/copyright, see: https://github.com/gedge/misc
 
 # global vars:
@@ -8,6 +8,7 @@
 #   g_lib_loaded       - has this file been loaded
 #   g_lib_nonfatal     - do not exit when g_die is used (return failure)
 #   g_ts_host          - used internally (when `g_opts nohost` not used)
+#   g_info_info        - used internally (when `g_opts info` used, g_info shows "INFO")
 #
 #   g_reader           - set by `g_reader`
 #   g_select           - set by `g_select`
@@ -16,6 +17,7 @@
 if [[ -z ${g_lib_loaded:-} ]]; then
 g_lib_loaded=1
 g_ts_host=${myHOST:-}
+g_info_info=
 
 g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_red' WHITE_on_red bold -- all valid
     if [[ $col == -r ]]; then recurse=1; col=$1; shift; fi
@@ -30,12 +32,19 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
     fi
 }
 g_ts()      { echo  $(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)} "$@"; }
-g_info()    { g_ts "$(g_colr -r cyan   "$@")"; }
+g_info()    { g_ts "${g_info_info}$(g_colr -r cyan   "$@")"; }
 g_trace()   { g_info "$@" >&2; }
 g_err()     { g_ts "$(g_colr -r RED    ERROR "$@")" >&2; }
 g_warn()    { g_ts "$(g_colr -r YELLOW WARN  "$@")" >&2; }
 g_log()     { g_ts "$@"; }
-g_opts()    { local res=0; while [[ -n ${1:-} ]]; do if [[ $1 == host ]]; then g_ts_host=${myHOST:-$(hostname -s)}; elif [[ $1 == nohost ]]; then g_ts_host=; else g_die 2 Bad g_opts: $1 || res=$?; fi; shift; done; return $res; }
+g_opts()    { local res=0; while [[ -n ${1:-} ]]; do
+	if   [[ $1 ==   host ]]; then g_ts_host=${myHOST:-$(hostname -s)}
+	elif [[ $1 == nohost ]]; then g_ts_host=
+	elif [[ $1 ==   info ]]; then g_info_info="$(g_colr CYAN "INFO ")"
+	else g_die 2 Bad g_opts: $1 || res=$?
+	fi; shift
+	done; return $res
+}
 g_zsh()     { [[ -n ${ZSH_NAME:-} ]]; }
 g_row_col() { local X= R= C=; if g_zsh; then IFS=';[' read -sdR X\?$'\E[6n' R C; else IFS=';[' read -sdR -p $'\E[6n' X R C; fi; echo $R $C; }
 g_col()     { local row_col="$(g_row_col)"; row_col=${row_col#* }; echo ${row_col:-0}; }
