@@ -7,7 +7,7 @@ mk=$(MAKE) --no-print-directory
 TARGET_DIR?=/usr/local/bin
 SOURCE_GLIB=lib/g_lib.sh
 SOURCE_SRCUP=lib/src_up.sh
-SOURCE_FILES=$(SOURCE_GLIB) $(SOURCE_SRCUP)
+SOURCE_FILES?=$(SOURCE_GLIB) $(SOURCE_SRCUP)
 
 all:
 	:

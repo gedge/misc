@@ -33,7 +33,7 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
 }
 g_ts()      { echo  $(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)} "$@"; }
 g_info()    { g_ts "${g_info_info}$(g_colr -r cyan   "$@")"; }
-g_trace()   { g_ts "$(g_colr -r BLACK  TRACE "$@")" >&2; }
+g_trace()   { g_ts "TRACE $(g_colr -r BLACK "$@")" >&2; }
 g_err()     { g_ts "$(g_colr -r RED    ERROR "$@")" >&2; }
 g_warn()    { g_ts "$(g_colr -r YELLOW WARN  "$@")" >&2; }
 g_log()     { g_ts "$@"; }
