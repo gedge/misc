@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20230113
+# version: 1.0.20230221
 # for licence/copyright, see: https://github.com/gedge/misc
 
 # global vars:
@@ -92,7 +92,7 @@ g_do_all=
 yorn() {
 	local quit_to= def=yn def_colr=cyan not_def_colr=bright_blue g_all=a do_it= res= cont= comment= pre_comment= cont_ok= no_ok= any_key= hit= opts=
 	local ignore_all= cd_in= timeout= timeout_arg= timeout_txt= timeout_yorn=n help=h quit=q quit_soft= quit_res=0 str= str_def= key1_flag=-k key1=1 twice=
-	while [[ -n $1 && $1 == --* ]]; do
+	while [[ -n ${1-} && $1 == --* ]]; do
 		if   [[ $1 == --           ]]; then shift; break
 		elif [[ $1 == --any        ]]; then any_key=y
 		elif [[ $1 == --comment    ]]; then comment=$(g_colr -r yellow "$2 "); shift
