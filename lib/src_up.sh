@@ -38,6 +38,7 @@ function do_diff() {
 	return $res
 }
 
+# src_up { install | ... } $src $target $verbose $ln_to
 function src_up() {
 	local do=$1 src=$2 target=$3 verbose=$4 ln_to=$5
 	local res=0 docp=
