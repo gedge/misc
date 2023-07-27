@@ -89,8 +89,8 @@ function src_up() {
 			if [[ $do == install* ]]; then
 				echo : $(g_colr CYAN Copying $src) to $target
 				if [[ $USER == root ]]; then
-					mode=0$($STAT "$src")
-					$ROOT_INSTALL -m "$mode" "$src" "$target" || exit 4
+					mode=0$(eval $STAT \"$src\")
+					eval $ROOT_INSTALL -m \"$mode\" \"$src\" \"$target\" || exit 4
 				else
 					cp -ip "$src" "$target" || exit 4
 				fi
