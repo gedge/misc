@@ -13,7 +13,7 @@ all:
 	:
 
 edit:
-	$(VISUAL) $(SOURCE_FILES)
+	$(VISUAL) Makefile $(SOURCE_FILES)
 
 install diff:
 	@for i in $(SOURCE_FILES); do				\
@@ -25,4 +25,4 @@ install1 diff1:
 	@if [[ -z "$(SRC)" || -z "$(TARGET)"  ]]; then echo Missing SRC/TARGET; exit 1; fi
 	@if [[ ! -e "$(SRC)" && ! -L "$(SRC)" ]]; then echo No file $(SRC);     exit 1; fi
 	@. $(SOURCE_SRCUP);	\
-	src_up "$@" "$(SRC)" "$(TARGET)" "$(VERBOSE)" "$(LN_TO)"
+	src_up --0444 "$@" "$(SRC)" "$(TARGET)" "$(VERBOSE)" "$(LN_TO)"
