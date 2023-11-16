@@ -117,7 +117,7 @@ function src_up() {
 				exit 22
 			fi
 			echo : Info: Checking $(g_colr cyan $target) for dotlines lines with $(g_colr BLACK $xref)
-			res=0; $DIFF -u --label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target")
+			res=0; $DIFF -u --label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
 					--label "$src"		<(echo "$xref_src") || res=$?
 			if [[ $res == 1 ]]; then
 				if [[ $do == install* ]]; then
