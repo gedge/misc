@@ -11,6 +11,6 @@ Put the file on your `PATH` and then use `source g_lib.sh` in your shell.
 
 ## Licence
 
-Copyright © 2018-2022, Geraint "Gedge" Edwards
+Copyright © 2018-2023, Geraint "Gedge" Edwards
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details.
