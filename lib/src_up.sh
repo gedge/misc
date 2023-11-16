@@ -10,10 +10,6 @@ else
 	. g_lib.sh
 fi
 
-DIFF=${DIFF:-colordiff}
-INSTALL=${INSTALL:-install -p}
-ROOT_INSTALL="$INSTALL -o '$USER' -g '$GROUP'"
-
 case "$(uname -s)" in
 	(Linux)
 		STAT="stat -c '%a'"
@@ -24,6 +20,10 @@ case "$(uname -s)" in
 		GROUP=wheel
 		;;
 esac
+
+DIFF=${DIFF:-colordiff}
+INSTALL=${INSTALL:-install -p}
+ROOT_INSTALL="$INSTALL -o '$USER' -g '$GROUP'"
 
 # do_diff returns 1 when diff returns 1 (the files differ)
 function do_diff() {
