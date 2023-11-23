@@ -110,7 +110,6 @@ function src_up() {
 				echo : $(g_colr RED Error: No xref) $src
 				exit 44
 			fi
-			echo : Info: Checking $src for dotlines lines with $(g_colr BLACK $xref)
 			xref_src=$(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$src")
 			if [[ -z "$xref_src" ]]; then
 				echo : $(g_colr RED Error: Bad xref) $src
