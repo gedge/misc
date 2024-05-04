@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20230721
+# version: 1.0.20240503
 # for licence/copyright, see: https://github.com/gedge/misc
 
 # global vars:
@@ -20,16 +20,16 @@ g_ts_host=${myHOST:-}
 g_info_info=
 
 g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_red' WHITE_on_red bold -- all valid
-    if [[ $col == -r ]]; then recurse=1; col=$1; shift; fi
-    if [[ -t 0 ]]; then
-        col=$'\e['$(perl -E '%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0); $bg=0; @c=(0);
-            for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc $_ or $_ =~ s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
-            say join(";", @c)' $col)m
-        if [[ -n $recurse ]]; then set -- "${@//$rst/$col}"; fi
-        if [[ -n ${MAKELEVEL:-} ]] && (( MAKELEVEL > 0 )); then echo "$col""$@""$rst"; else echo -e "$col""$@""$rst"; fi
-    else
-        echo "$@"
-    fi
+	if [[ $col == -r ]]; then recurse=1; col=$1; shift; fi
+	if [[ -t 0 ]]; then
+		col=$'\e['$(perl -E '%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0); $bg=0; @c=(0);
+			for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc $_ or $_ =~ s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
+			say join(";", @c)' $col)m
+		if [[ -n $recurse ]]; then set -- "${@//$rst/$col}"; fi
+		if [[ -n ${MAKELEVEL:-} ]] && (( MAKELEVEL > 0 )); then echo "$col""$@""$rst"; else echo -e "$col""$@""$rst"; fi
+	else
+		echo "$@"
+	fi
 }
 g_ts()      { echo  $(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)} "$@"; }
 g_info()    { g_ts "${g_info_info}$(g_colr -r cyan "$@")"; }
@@ -51,14 +51,14 @@ g_col()     { local row_col="$(g_row_col)"; row_col=${row_col#* }; echo ${row_co
 g_cont()    { local res=$1 arg=--no res_txt=; shift; if [[ $res == -y ]]; then arg=; res=$1; shift; fi; if [[ $res != 0 ]]; then res_txt=" after $(g_colr bright_white_on_red error code $res)"; else arg=; fi; yorn --ignore-all $arg "$@" "Continue$res_txt" || g_exit $res; }
 
 g_exit() {
-    local res=$1; shift
-    [[ -n ${g_lib_nonfatal:-} ]] && return $res
-    exit $res
+	local res=$1; shift
+	[[ -n ${g_lib_nonfatal:-} ]] && return $res
+	exit $res
 }
 g_die() {
-    local res=$1; shift
-    g_err "$@"
-    g_exit $res
+	local res=$1; shift
+	g_err "$@"
+	g_exit $res
 }
 
 g_ensure_env()  { local e= res=0;for e; do if g_zsh; then [[ -n ${(P)e} ]] && continue; else [[ -n ${!e} ]] && continue; fi; g_die 2 $e unset || res=$?; done; return $res; }
@@ -67,12 +67,12 @@ g_ensure_dir()  { local d= res=0;for d; do [[ -d $d             ]] || mkdir -p $
 g_ensure_in_path() { # [ --end ] path...
 	local end_ok= p=
 	while true; do
-            case $1 in
-                --end) end_ok=1; ;;
-                *) break; ;;
-            esac
-            shift
-        done
+		case $1 in
+			(--end)	end_ok=1;	;;
+			(*)	break;		;;
+		esac
+		shift
+	done
 	for p; do
 		[[ :$PATH: == *:$p:* ]] && continue
 		if [[ -n $end_ok ]]; then PATH=$PATH:$p; continue; fi
@@ -81,11 +81,12 @@ g_ensure_in_path() { # [ --end ] path...
 }
 
 g_yorn_prompt() {
-	local prompt=$1; shift
-	if g_zsh; then IFS= read "$@" yorn\?"$prompt "
-	else           IFS= read "$@" -p    "$prompt " yorn
+	local prompt=$1 res=0; shift
+	if g_zsh; then IFS= read "$@" yorn\?"$prompt "      || res=$?
+	else           IFS= read "$@" -p    "$prompt " yorn || res=$?
 	fi
 	(( $(g_col) <= 1 )) || echo
+	return $res
 }
 
 g_do_all=
@@ -135,16 +136,17 @@ yorn() {
 			fi
 		fi
 	fi
+	if [[ -z $str ]]; then
+		hit="$(g_colr -r $not_def_colr "$(g_colr $def_colr ${def:0:1})${def:1}${g_all}${help}${quit}")"
+	else
+		hit="def: "$(g_colr -r $not_def_colr "$str_def")
+		timeout_yorn=$str_def
+	fi
+	[[ -n $any_key ]] && hit="$(g_colr -r $not_def_colr hit any key or: $(g_colr cyan hq))"
 	while [[ -z $res ]]; do
-		if [[ -z $str ]]; then
-			hit="$(g_colr -r $not_def_colr "$(g_colr $def_colr ${def:0:1})${def:1}${g_all}${help}${quit}")"
-		else
-			hit="def: "$(g_colr -r $not_def_colr "$str_def")
-			timeout_yorn=$str_def
+		if ! g_yorn_prompt "$(g_info "$pre_comment$comment""$@") [$hit]$timeout_txt${str:+ ?}" $timeout_arg $timeout $key1_flag $key1; then
+			[[ -n $timeout ]] && yorn=$timeout_yorn
 		fi
-		[[ -n $any_key ]] && hit="$(g_colr -r $not_def_colr hit any key or: $(g_colr cyan hq))"
-		g_yorn_prompt "$(g_info "$pre_comment$comment""$@") [$hit]$timeout_txt${str:+ ?}" $timeout_arg $timeout $key1_flag $key1
-		if [[ -n $timeout && $? -ne 0 ]]; then yorn=$timeout_yorn; fi
 		if [[ -n $str ]]; then
 			if   [[ $yorn == " " ]]; then yorn=
 			elif [[ -z $yorn     ]]; then yorn=$str_def
