@@ -1,14 +1,24 @@
 #!/bin/false dotme
 
-# version: 1.0.20240503
+# version: 1.0.20241126
 # for licence/copyright, see: https://github.com/gedge/misc
 
+# configure options with the command:
+#       g_opts <opts>...
+# <opts> can be:
+#       colr        force use of colour in logging
+#       host        use $myHOST or hostname in logging (see 'nohost')
+#       info        show "INFO" prefix when using g_info
+#       nohost      do not use hostname in logging (see 'host')
+
 # global vars:
+#   g_colr_cache       - cache of colours
+#   g_colr_force       - if set, will force colour output
 #   g_do_all           - if set, responds positively to any yorn (see `yorn --reset-all`)
+#   g_info_info        - used internally (when `g_opts info` used, g_info shows "INFO")
 #   g_lib_loaded       - has this file been loaded
 #   g_lib_nonfatal     - do not exit when g_die is used (return failure)
 #   g_ts_host          - used internally (when `g_opts nohost` not used)
-#   g_info_info        - used internally (when `g_opts info` used, g_info shows "INFO")
 #
 #   g_reader           - set by `g_reader`
 #   g_select           - set by `g_select`
@@ -18,13 +28,19 @@ if [[ -z ${g_lib_loaded:-} ]]; then
 g_lib_loaded=1
 g_ts_host=${myHOST:-}
 g_info_info=
+g_colr_force=
+typeset -A g_colr_cache=()
 
 g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_red' WHITE_on_red bold -- all valid
 	if [[ $col == -r ]]; then recurse=1; col=$1; shift; fi
-	if [[ -t 0 ]]; then
-		col=$'\e['$(perl -E '%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0); $bg=0; @c=(0);
-			for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc $_ or $_ =~ s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
-			say join(";", @c)' $col)m
+	if [[ -n $g_colr_force || -t 0 ]]; then
+		if [[ -z ${g_colr_cache[$col]-} ]]; then
+			local col_code=$'\e['$(perl -E '%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0); $bg=0; @c=(0);
+					for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc $_ or $_ =~ s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
+					say join(";", @c)' $col)m
+			g_colr_cache+=( [$col]="$col_code" )
+		fi
+		col=${g_colr_cache[$col]}
 		if [[ -n $recurse ]]; then set -- "${@//$rst/$col}"; fi
 		if [[ -n ${MAKELEVEL:-} ]] && (( MAKELEVEL > 0 )); then echo "$col""$@""$rst"; else echo -e "$col""$@""$rst"; fi
 	else
@@ -40,6 +56,7 @@ g_log()     { g_ts "$@"; }
 g_opts()    { local res=0; while [[ -n ${1:-} ]]; do
 	if   [[ $1 ==   host ]]; then g_ts_host=${myHOST:-$(hostname -s)}
 	elif [[ $1 == nohost ]]; then g_ts_host=
+	elif [[ $1 ==   colr ]]; then g_colr_force=1
 	elif [[ $1 ==   info ]]; then g_info_info="$(g_colr CYAN "INFO ")"
 	else g_die 2 Bad g_opts: $1 || res=$?
 	fi; shift

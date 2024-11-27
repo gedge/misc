@@ -13,7 +13,7 @@ all:
 	:
 
 edit:
-	$(VISUAL) Makefile $(SOURCE_FILES)
+	$(VISUAL) Makefile $(SOURCE_FILES) README.md
 
 install diff:
 	@for i in $(SOURCE_FILES); do				\
