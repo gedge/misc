@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20231112
+# version: 1.0.20250730
 # for licence/copyright, see: https://github.com/gedge/misc
 
 if [[ -f lib/g_lib.sh && -f lib/src_up.sh && -d .git ]]; then
@@ -166,6 +166,7 @@ function src_up() {
 				yorn		$INSTALL	-m \"$mode\" \"$src\" \"$target\" && \
 					eval	$INSTALL	-m \"$mode\" \"$src\" \"$target\" || exit 4
 				# cp -ip "$src" "$target" || exit 4
+				[[ -z "$verbose" ]] || echo ": $(ls -l "$target")"
 			fi
 		else
 			echo :	cp -ip "$src" "$target" || exit 4
