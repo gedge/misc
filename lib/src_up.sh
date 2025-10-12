@@ -165,11 +165,10 @@ function src_up() {
 			else
 				yorn		$INSTALL	-m \"$mode\" \"$src\" \"$target\" && \
 					eval	$INSTALL	-m \"$mode\" \"$src\" \"$target\" || exit 4
-				# cp -ip "$src" "$target" || exit 4
 				[[ -z "$verbose" ]] || echo ": $(ls -l "$target")"
 			fi
 		else
-			echo :	cp -ip "$src" "$target" || exit 4
+			echo ": [$do]"		$INSTALL	-m \"$mode\" \"$src\" \"$target\" || exit 4
 		fi
 	fi
 }
