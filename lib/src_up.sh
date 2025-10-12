@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20250730
+# version: 1.0.20251012
 # for licence/copyright, see: https://github.com/gedge/misc
 
 if [[ -f lib/g_lib.sh && -f lib/src_up.sh && -d .git ]]; then

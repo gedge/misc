@@ -37,6 +37,6 @@ Put the file on your `PATH` and then use `source g_lib.sh` in your shell.
 
 ## Licence
 
-Copyright © 2018-2024, Geraint "Gedge" Edwards
+Copyright © 2018-2025, Geraint "Gedge" Edwards
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details.
