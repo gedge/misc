@@ -23,7 +23,9 @@ Put the file on your `PATH` and then use `source g_lib.sh` in your shell.
   Output the *text* in *colour* - where *colour* is one of:
 
       - `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan` or `white`
-      - uppercase versions of the above indicate the bold version - e.g. `BLACK` is grey
+      - for bold versions of the colours, use one of:
+        - uppercase - e.g. `BLACK` is grey
+        - the prefix `bright_` - e.g. `bright_black` is grey
       - `BOLD` turns on bold for the current colour
       - `${foreground_colour}_on_${background_colour}` - e.g. `black_on_white`
 
