@@ -16,13 +16,17 @@ edit:
 	$(VISUAL) Makefile $(SOURCE_FILES) README.md LICENSE.md
 
 install diff:
-	@for i in $(SOURCE_FILES); do				\
+	@for i in $(SOURCE_FILES); do								\
 		$(mk) $(@)1 VERBOSE=$(VERBOSE) SRC="$$i" TARGET="$(TARGET_DIR)/$${i##*/}";	\
 	done
 
 # $(mk) install1 TARGET=... SRC=... (optionally LN_TO=tgt when want symlink to tgt, not cp SRC)
-install1 diff1:
-	@if [[ -z "$(SRC)" || -z "$(TARGET)"  ]]; then echo Missing SRC/TARGET; exit 1; fi
-	@if [[ ! -e "$(SRC)" && ! -L "$(SRC)" ]]; then echo No file $(SRC);     exit 1; fi
-	@. $(SOURCE_SRCUP);	\
-	src_up --0444 "$@" "$(SRC)" "$(TARGET)" "$(VERBOSE)" "$(LN_TO)"
+sane:
+	@if [[   -z "$(SRC)" || -z "$(TARGET)" ]]; then echo Missing SRC/TARGET; exit 1; fi
+	@if [[ ! -e "$(SRC)" && ! -L "$(SRC)"  ]]; then echo No file $(SRC);     exit 1; fi
+install1 diff1: sane
+	@args=();						\
+	[[ -n "$(VERBOSE)" ]] && args+=("--verbose");		\
+	[[ $@ == install*  ]] && args+=("--install");		\
+	source $(SOURCE_SRCUP);					\
+		src_up --0444 $$args "$(SRC)" "$(TARGET)"

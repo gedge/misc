@@ -11,10 +11,17 @@ Put the file on your `PATH` and then use `source g_lib.sh` in your shell.
 
 ### g\_lib usage
 
-- `source g_lib.sh`
-- `g_opts ...`
+```shell
+source g_lib.sh
+g_opts ...
 
-  See source for what options are available.
+g_info ...
+yorn ...
+g_select ...
+g_colr $colour $text
+```
+
+See source for what options are available.
 
 - `g_colr [ -r ] $colour "text"`
 
@@ -37,8 +44,21 @@ Put the file on your `PATH` and then use `source g_lib.sh` in your shell.
 
   Ask a question and the single-keystroke answer (`y`, `n`) returns in `$yorn`
 
+## src\_up.sh
+
+A shell library for deploying files - e.g. using `diff`, `install` and prompting
+(uses `g_lib.sh`, above).
+Handles symlinks in a more verbose/clear manner.
+
+### src\_up.sh usage
+
+```shell
+source src_up.sh
+src_up { --0755 | --install | --lines | --ln $ln_to | --mkdir | --verbose } [ -- ] $src $target
+```
+
 ## Licence
 
-Copyright © 2018-2025, Geraint "Gedge" Edwards
+Copyright © 2018-2026, Geraint "Gedge" Edwards
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details.
