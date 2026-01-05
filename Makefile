@@ -29,4 +29,4 @@ install1 diff1: sane
 	[[ -n "$(VERBOSE)" ]] && args+=("--verbose");		\
 	[[ $@ == install*  ]] && args+=("--install");		\
 	source $(SOURCE_SRCUP);					\
-		src_up --0444 $$args "$(SRC)" "$(TARGET)"
+		src_up --0444 "$${args[@]}" "$(SRC)" "$(TARGET)"
