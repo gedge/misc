@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 2.0.20260104
+# version: 2.0.20270217
 # for licence/copyright, see: https://github.com/gedge/misc
 
 if [[ -f lib/g_lib.sh && -f lib/src_up.sh && -d .git ]]; then
@@ -57,12 +57,12 @@ function do_diff() {
 	local res=0; $src_up_DIFF -q "$target" "$src" > /dev/null || res=$?
 	if [[ $res == 1 ]]; then
 		if [[ "$target" -nt "$src" ]]; then
-			$src_up_DIFF -u "$src" "$target"
+			$src_up_DIFF $DIFF_ARGS -u "$src" "$target"
 			echo ": $(g_colr RED    "WARNING: target newer"), pull: cp -ip \"$target\" \"$src\""
 			echo ": $(g_colr YELLOW "     or:  force older"), push: cp -ip \"$src\" \"$target\""
 			res=2
 		else
-			$src_up_DIFF -u "$target" "$src"
+			$src_up_DIFF $DIFF_ARGS -u "$target" "$src"
 		fi
 	elif [[ $res -ne 0 ]]; then
 		echo ": $(g_colr RED Error: Bad diff) -u $target $src"
@@ -161,8 +161,8 @@ function src_up() {
 			fi
 			src_up_ensure_diff
 			echo ": Info: Checking $(g_colr cyan $target) for dotlines lines with $(g_colr BLACK $xref)"
-			res=0; $src_up_DIFF -u --label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
-					--label "$src"		<(echo "$xref_src") || res=$?
+			res=0; $src_up_DIFF $DIFF_ARGS -u --label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
+							  --label "$src"	<(echo "$xref_src") || res=$?
 			if [[ $res == 1 ]]; then
 				# there is a diff
 				if [[ -n "$do_install" ]]; then
@@ -172,7 +172,7 @@ function src_up() {
 						perl -nsE 'print unless /$x/.../$x/' -- -x="$xref" < "$target"
 						cat "$src"
 					} > "$target_noo"
-					res=0; $src_up_DIFF -u "$target" --label tmp-chunk "$target_noo"	|| res=$?
+					res=0; $src_up_DIFF $DIFF_ARGS -u "$target" --label tmp-chunk "$target_noo"	|| res=$?
 					if [[ $res == 1 ]]; then
 						if ! cat "$target_noo" >| "$target"; then
 							rm "$target_noo"

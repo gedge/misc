@@ -1,15 +1,18 @@
 #!/bin/false dotme
 
-# version: 1.0.20241126
+# version: 1.0.20260217
 # for licence/copyright, see: https://github.com/gedge/misc
 
 # configure options with the command:
-#       g_opts <opts>...
-# <opts> can be:
+#       g_opts <opt> [ <opt>... ]
+# <opt> can be:
 #       colr        force use of colour in logging
-#       host        use $myHOST or hostname in logging (see 'nohost')
+#       extro       be noisy about (fatal) ERR signal (see 'strict')
+#       host        use $myHOST (default) or hostname in logging (see 'nohost')
+#       nohost      do not use any hostname in logging (see 'host')
 #       info        show "INFO" prefix when using g_info
-#       nohost      do not use hostname in logging (see 'host')
+#       noinfo      do not show "INFO" prefix when using g_info (default)
+#       strict      fail on errors (see 'extro')
 
 # global vars:
 #   g_colr_cache       - cache of colours
@@ -53,11 +56,15 @@ g_trace()   { g_ts "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2; }
 g_err()     { g_ts "$(g_colr -r RED    ERROR "$@")" >&2; }
 g_warn()    { g_ts "$(g_colr -r YELLOW WARN  "$@")" >&2; }
 g_log()     { g_ts "$@"; }
+g_extro()   { g_err "$1 [line $3] errored - return code $2"; }
 g_opts()    { local res=0; while [[ -n ${1:-} ]]; do
-	if   [[ $1 ==   host ]]; then g_ts_host=${myHOST:-$(hostname -s)}
+	if   [[ $1 == colr   ]]; then g_colr_force=1
+	elif [[ $1 == extro  ]]; then trap 'g_extro $0 $? $LINENO' ERR
+	elif [[ $1 ==   host ]]; then g_ts_host=${myHOST:-$(hostname -s)}
 	elif [[ $1 == nohost ]]; then g_ts_host=
-	elif [[ $1 ==   colr ]]; then g_colr_force=1
 	elif [[ $1 ==   info ]]; then g_info_info="$(g_colr CYAN "INFO ")"
+	elif [[ $1 == noinfo ]]; then g_info_info=
+	elif [[ $1 == strict ]]; then set -euo pipefail
 	else g_die 2 Bad g_opts: $1 || res=$?
 	fi; shift
 	done; return $res

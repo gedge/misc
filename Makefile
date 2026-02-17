@@ -30,3 +30,8 @@ install1 diff1: sane
 	[[ $@ == install*  ]] && args+=("--install");		\
 	source $(SOURCE_SRCUP);					\
 		src_up --0444 "$${args[@]}" "$(SRC)" "$(TARGET)"
+
+test:
+	-@         source $(SOURCE_GLIB); g_opts strict extro; echo -n "Test 1 "; ls "does not exist"
+	-@bash -c 'source $(SOURCE_GLIB); g_opts strict extro; echo -n "Test 2 "; grep "yes" <<<"no"  '
+	-@         source $(SOURCE_GLIB); g_opts strict extro; echo -n "Test 3 "; "cmd does not exist"
