@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20260217
+# version: 1.0.20260509
 # for licence/copyright, see: https://github.com/gedge/misc
 
 # configure options with the command:
@@ -50,7 +50,14 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
 		echo "$@"
 	fi
 }
-g_ts()      { echo  $(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)} "$@"; }
+g_ts() {
+	local pre=
+	if [[ $1 == --pre && -n ${2-} ]]; then
+		pre=$2
+		shift 2
+	fi
+	echo $pre$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)} "$@"
+}
 g_info()    { g_ts "${g_info_info}$(g_colr -r cyan "$@")"; }
 g_trace()   { g_ts "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2; }
 g_err()     { g_ts "$(g_colr -r RED    ERROR "$@")" >&2; }
@@ -178,9 +185,9 @@ yorn() {
 			return
 		fi
 		[[ -n $any_key && :${help}:${quit}: != *:$yorn:* ]] && return 0
-		if [[ -n $yorn && $yorn == $'\f' ]]; then clear; continue; fi
-		if [[ -n $yorn && $yorn == $'\e' ]]; then g_warn huh; continue; fi
-		if [[ -z $yorn || $yorn == " " || $yorn == $'\n' ]]; then yorn=${def:0:1}; fi
+		if   [[ -n $yorn && $yorn == $'\f'   ]]; then clear; continue; fi
+		if   [[ -n $yorn && $yorn == $'\e'   ]]; then g_warn huh; continue; fi
+		if   [[ -z $yorn || $yorn == " " || $yorn == $'\n' ]]; then yorn=${def:0:1}; fi
 		if   [[ -n $quit  && $yorn == $quit  ]]; then [[ -n $quit_soft ]] && return 1; if [[ -n $quit_to ]]; then $quit_to; fi; g_exit $quit_res; return $?
 		elif [[ -n $g_all && $yorn == $g_all ]]; then g_do_all=yes; res=0
 		elif [[ -n $help  && $yorn == $help  ]]; then g_info "Hit: $(g_colr bright_magenta y)=yes, $(g_colr bright_magenta n)=no, $(g_colr bright_magenta a)=all (accept default for all subsequent), $(g_colr bright_magenta q)=quit"
