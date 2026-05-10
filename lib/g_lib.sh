@@ -59,23 +59,23 @@ g_args() {
 	echo "$args"
 }
 g_ts()    {
-	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
 	echo "${args[*]}$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)}" "$@"
 }
 g_info()  {
-	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
 	g_ts "${args[@]}" "${g_info_info}$(g_colr -r cyan "$@")"
 }
 g_trace() {
-	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
 	g_ts "${args[@]}" "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2
 }
 g_err()   {
-	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
 	g_ts "${args[@]}" "$(g_colr -r RED    ERROR "$@")" >&2
 }
 g_warn()  {
-	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
 	g_ts "${args[@]}" "$(g_colr -r YELLOW WARN  "$@")" >&2
 }
 g_log()     { g_ts "$@"; }
