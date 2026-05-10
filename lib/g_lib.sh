@@ -59,7 +59,7 @@ g_args() {
 	echo "$args"
 }
 g_ts()    {
-	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
+	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$2" ); shift 2; fi	# just one arg
 	echo "${args[*]}$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)}" "$@"
 }
 g_info()  {
