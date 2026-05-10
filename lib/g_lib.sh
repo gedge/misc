@@ -32,6 +32,7 @@ g_lib_loaded=1
 g_ts_host=${myHOST:-}
 g_info_info=
 g_colr_force=
+g_idx_offset=0	# bash vs zsh
 typeset -A g_colr_cache=()
 
 g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_red' WHITE_on_red bold -- all valid
@@ -50,18 +51,33 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
 		echo "$@"
 	fi
 }
-g_ts() {
-	local pre=
+g_args() {
+	local args=
 	if [[ $1 == --pre && -n ${2-} ]]; then
-		pre=$2
-		shift 2
+		args="$2"
 	fi
-	echo $pre$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)} "$@"
+	echo "$args"
 }
-g_info()    { g_ts "${g_info_info}$(g_colr -r cyan "$@")"; }
-g_trace()   { g_ts "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2; }
-g_err()     { g_ts "$(g_colr -r RED    ERROR "$@")" >&2; }
-g_warn()    { g_ts "$(g_colr -r YELLOW WARN  "$@")" >&2; }
+g_ts()    {
+	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	echo "${args[*]}$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)}" "$@"
+}
+g_info()  {
+	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	g_ts "${args[@]}" "${g_info_info}$(g_colr -r cyan "$@")"
+}
+g_trace() {
+	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	g_ts "${args[@]}" "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2
+}
+g_err()   {
+	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	g_ts "${args[@]}" "$(g_colr -r RED    ERROR "$@")" >&2
+}
+g_warn()  {
+	typeset -a args=(); if [[ -n "$(g_args)" ]]; then args=( "$1" "$2" ); shift 2; fi
+	g_ts "${args[@]}" "$(g_colr -r YELLOW WARN  "$@")" >&2
+}
 g_log()     { g_ts "$@"; }
 g_extro()   { g_err "$1 [line $3] errored - return code $2"; }
 g_opts()    { local res=0; while [[ -n ${1:-} ]]; do
@@ -77,6 +93,7 @@ g_opts()    { local res=0; while [[ -n ${1:-} ]]; do
 	done; return $res
 }
 g_zsh()     { [[ -n ${ZSH_NAME:-} ]]; }
+g_zsh && g_idx_offset=1 || true		# bash vs zsh
 g_row_col() { local X= R= C=; if g_zsh; then IFS=';[' read -sdR X\?$'\E[6n' R C; else IFS=';[' read -sdR -p $'\E[6n' X R C; fi; echo $R $C; }
 g_col()     { local row_col="$(g_row_col)"; row_col=${row_col#* }; echo ${row_col:-0}; }
 g_cont()    { local res=$1 arg=--no res_txt=; shift; if [[ $res == -y ]]; then arg=; res=$1; shift; fi; if [[ $res != 0 ]]; then res_txt=" after $(g_colr bright_white_on_red error code $res)"; else arg=; fi; yorn --ignore-all $arg "$@" "Continue$res_txt" || g_exit $res; }
