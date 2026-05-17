@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 2.1.20260509
+# version: 2.1.20260516
 # for licence/copyright, see: https://github.com/gedge/misc
 
 if [[ -f lib/g_lib.sh && -f lib/src_up.sh && -d .git ]]; then
@@ -53,7 +53,7 @@ function do_diff() {
 		fi
 	done
 	local src=$1 target=$2
-	local target_bold="$(g_colr BOLD "$target")"
+	local target_bold="$(g_colr bold "$target")"
 	src_up_ensure_diff
 	local res=0; $src_up_DIFF -q "$target" "$src" > /dev/null || res=$?
 	if [[ $res == 1 ]]; then
@@ -100,7 +100,7 @@ function src_up() {
 		fi
 	done
 	local src=$1 target=$2
-	local target_bold="$(g_colr BOLD "$target")"
+	local target_bold="$(g_colr bold "$target")"
 	local dir=$(dirname "$target")
 	if [[ -n "$do_install" ]]; then
 		if [[ ! -d "$dir" ]]; then
@@ -122,7 +122,7 @@ function src_up() {
 		if [[ -L "$target" ]]; then
 			local ln_target="$(readlink "$target")"
 			if [[ "$ln_to" != "$ln_target" ]]; then
-				g_warn --pre ": " "Diff symlink $(g_colr white "$target → $ln_target") --- expected $(g_colr BOLD "$ln_to")"
+				g_warn --pre ": " "Diff symlink $(g_colr white "$target → $ln_target") --- expected $(g_colr bold "$ln_to")"
 				do_cp=rmln
 			else
 				[[ -n "$verbose" ]] && g_info --pre ": " "No symlink diff $target_bold → $ln_to"
@@ -164,8 +164,8 @@ function src_up() {
 			fi
 			src_up_ensure_diff
 			g_info --pre ": " "Checking $target_bold for dotlines lines with $(g_colr BLACK $xref)"
-			res=0; $src_up_DIFF $DIFF_ARGS -u --label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
-							  --label "$src"	<(echo "$xref_src") || res=$?
+			res=0; $src_up_DIFF $DIFF_ARGS -u	--label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
+								--label "$src"		<(echo "$xref_src") || res=$?
 			if [[ $res == 1 ]]; then
 				# there is a diff
 				if [[ -n "$do_install" ]]; then

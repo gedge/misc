@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20260509
+# version: 1.0.20260516
 # for licence/copyright, see: https://github.com/gedge/misc
 
 # configure options with the command:
@@ -32,7 +32,7 @@ g_lib_loaded=1
 g_ts_host=${myHOST:-}
 g_info_info=
 g_colr_force=
-g_idx_offset=0	# bash vs zsh
+g_idx_offset=0	# bash vs zsh (default is bash)
 typeset -A g_colr_cache=()
 
 g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_red' WHITE_on_red bold -- all valid
@@ -40,7 +40,7 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
 	if [[ -n $g_colr_force || -t 0 ]]; then
 		if [[ -z ${g_colr_cache[$col]-} ]]; then
 			local col_code=$'\e['$(perl -E '%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0); $bg=0; @c=(0);
-					for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc $_ or $_ =~ s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
+					for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc($_) or s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
 					say join(";", @c)' $col)m
 			g_colr_cache+=( [$col]="$col_code" )
 		fi
@@ -52,31 +52,32 @@ g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_re
 	fi
 }
 g_args() {
-	local args=
-	if [[ $1 == --pre && -n ${2-} ]]; then
-		args="$2"
+	local g_args=()
+	if [[ ${1-} == --pre && -n ${2-} ]]; then
+		g_args=( "$1" "$2" )
 	fi
-	echo "$args"
+	typeset -p g_args
 }
 g_ts()    {
-	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$2" ); shift 2; fi	# just one arg
-	echo "${args[*]}$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)}" "$@"
+	# takes optional argument '--pre string' to prefix timestamp'ed line (and, importantly, its colours)
+	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 && ${g_args[$g_idx_offset]} = "--pre" ]]; then g_zsh && shift g_args || unset g_args[0]; shift 2; fi; fi	# just one g_args wanted (throw away 1st/--pre)
+	echo "${g_args[@]}$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)}" "$@"
 }
 g_info()  {
-	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
-	g_ts "${args[@]}" "${g_info_info}$(g_colr -r cyan "$@")"
+	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
+	g_ts "${g_args[@]}" "${g_info_info}$(g_colr -r cyan "$@")"
 }
 g_trace() {
-	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
-	g_ts "${args[@]}" "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2
+	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
+	g_ts "${g_args[@]}" "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2
 }
 g_err()   {
-	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
-	g_ts "${args[@]}" "$(g_colr -r RED    ERROR "$@")" >&2
+	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
+	g_ts "${g_args[@]}" "$(g_colr -r RED    ERROR "$@")" >&2
 }
 g_warn()  {
-	typeset -a args=(); if [[ -n "$(g_args "$@")" ]]; then args=( "$1" "$2" ); shift 2; fi
-	g_ts "${args[@]}" "$(g_colr -r YELLOW WARN  "$@")" >&2
+	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
+	g_ts "${g_args[@]}" "$(g_colr -r YELLOW WARN  "$@")" >&2
 }
 g_log()     { g_ts "$@"; }
 g_extro()   { g_err "$1 [line $3] errored - return code $2"; }

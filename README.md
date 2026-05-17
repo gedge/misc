@@ -23,7 +23,7 @@ g_colr $colour $text
 
 See source for what options are available.
 
-- `g_colr [ -r ] $colour "text"`
+- `g_colr [ -r ] [ --pre "pre" ] $colour "text"`
 
   Example: `g_colr cyan "this is output in colour"`
 
@@ -33,7 +33,7 @@ See source for what options are available.
       - for bold versions of the colours, use one of:
         - uppercase - e.g. `BLACK` is grey
         - the prefix `bright_` - e.g. `bright_black` is grey
-      - `BOLD` turns on bold for the current colour
+      - `bold` turns on bold for the current colour
       - `${foreground_colour}_on_${background_colour}` - e.g. `black_on_white`
 
    If *text* already has embedded colours, then the `-r` flag can be used to re-apply
