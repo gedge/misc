@@ -23,7 +23,27 @@ g_colr $colour $text
 
 See source for what options are available.
 
-- `g_colr [ -r ] [ --pre "pre" ] $colour "text"`
+- `g_info [ --pre "pre" ] "info-text"`
+
+  show timestamp, optional 'INFO' (see `g_opts info`), then "info-text" coloured suitably
+
+- `g_warn [ --pre "pre" ] "warn-text"`
+
+  similar to `g_info` (above): show timestamp, 'WARN', then "warn-text" coloured suitably - to STDERR
+
+- `g_err [ --pre "pre" ] "err-text"`
+
+  similar to `g_info` (above): show timestamp, 'ERROR', then "err-text" coloured suitably - to STDERR
+
+- `g_die $exit_code [ --pre "pre" ] "die-text"`
+
+  run `g_err` with post-`$exit_code` args, then `exit $exit_code`
+
+- `g_trace [ --pre "pre" ] "trace-text"`
+
+  similar to `g_info` (above): show timestamp, 'TRACE', then "trace-text" coloured suitably - to STDERR
+
+- `g_colr [ -r ] $colour "text"`
 
   Example: `g_colr cyan "this is output in colour"`
 
