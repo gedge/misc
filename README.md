@@ -1,5 +1,9 @@
 # misc
 
+A collection of handy scripts for help with scripting.
+
+Currently, `g_lib.sh` and `src_up.sh`.  See below.
+
 ## g\_lib.sh
 
 A shell (bash- and zsh-compatible) library, largely for:

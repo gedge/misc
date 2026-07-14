@@ -1,7 +1,7 @@
 #!/bin/false dotme
 
-# version: 1.0.20260516
-# for licence/copyright, see: https://github.com/gedge/misc
+# version: 1.0.20260714
+# for licence/copyright, see: https://codeberg.org/gedge/misc
 
 # configure options with the command:
 #       g_opts <opt> [ <opt>... ]

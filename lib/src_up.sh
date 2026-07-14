@@ -1,7 +1,7 @@
 #!/bin/false dotme
 
-# version: 2.1.20260516
-# for licence/copyright, see: https://github.com/gedge/misc
+# version: 2.1.20260714
+# for licence/copyright, see: https://codeberg.org/gedge/misc
 
 if [[ -f lib/g_lib.sh && -f lib/src_up.sh && -d .git ]]; then
 	# use local version when developing
