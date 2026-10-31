@@ -1,12 +1,14 @@
 #!/bin/false dotme
 
-# version: 1.0.20260714
+# version: 1.0.20261031
 # for licence/copyright, see: https://codeberg.org/gedge/misc
 
 # configure options with the command:
 #       g_opts <opt> [ <opt>... ]
 # <opt> can be:
-#       colr        force use of colour in logging
+#       colr        force use of colour in logging (default)
+#       nocolr      forces no colour in output (cf `g_opts autocolr`)
+#       autocolr    only add colour when output is to terminal
 #       extro       be noisy about (fatal) ERR signal (see 'strict')
 #       host        use $myHOST (default) or hostname in logging (see 'nohost')
 #       nohost      do not use any hostname in logging (see 'host')
@@ -16,7 +18,9 @@
 
 # global vars:
 #   g_colr_cache       - cache of colours
-#   g_colr_force       - if set, will force colour output
+#   g_colr_flag        - if set to 'force' (the default), forces colour output (cf `g_opts colr`)
+#                        if set to 'never', forces no colour output            (cf `g_opts nocolr`)
+#                        if set to 'auto',  forces colour output when terminal (cf `g_opts autocolr`)
 #   g_do_all           - if set, responds positively to any yorn (see `yorn --reset-all`)
 #   g_info_info        - used internally (when `g_opts info` used, g_info shows "INFO")
 #   g_lib_loaded       - has this file been loaded
@@ -31,13 +35,32 @@ if [[ -z ${g_lib_loaded:-} ]]; then
 g_lib_loaded=1
 g_ts_host=${myHOST:-}
 g_info_info=
-g_colr_force=
+g_colr_flag=force
 g_idx_offset=0	# bash vs zsh (default is bash)
 typeset -A g_colr_cache=()
 
-g_colr() { local col=$1 recurse= rst=$'\e[0m'; shift  # '[-r] bright_white_on_red' WHITE_on_red bold -- all valid
-	if [[ $col == -r ]]; then recurse=1; col=$1; shift; fi
-	if [[ -n $g_colr_force || -t 0 ]]; then
+# args are '$fd' and then '-c -C -2' (flags)
+g_want_colour() {
+	if [[ -n ${2-} ]]; then [[ " $2 " == *" -C "* ]] && return 1; [[ " $2 " == *" -c "* ]] && return 0; fi
+	[[ $g_colr_flag != force ]] || return 0
+	[[ $g_colr_flag != never ]] || return 1
+	[[ -t $1                 ]] || return 1
+	return 0
+}
+
+g_colr() {
+	local recurse= fd=1 rst=$'\e[0m'	# [-r] [ -c|-C | --fd N | -2 ] 'bright_white_on_red' WHITE_on_red bold -- all valid
+	local flags=()
+	while [[ :-2:-c:-C:--fd:-r: == *:${1-}:* ]]; do
+		local flag=$1; shift
+		if   [[ $flag   ==  -2       ]]; then fd=2
+		elif [[ :-c:-C: == *:$flag:* ]]; then flags+=( $flag )
+		elif [[ $flag   == --fd      ]]; then fd=$1; shift
+		elif [[ $flag   ==  -r       ]]; then recurse=1
+		fi
+	done
+	local col=$1; shift
+	if g_want_colour $fd "${flags[*]}"; then
 		if [[ -z ${g_colr_cache[$col]-} ]]; then
 			local col_code=$'\e['$(perl -E '%c=(bold=>1,black=>30,red=>31,green=>32,yellow=>33,blue=>34,magenta=>35,cyan=>36,white=>37,reset=>0); $bg=0; @c=(0);
 					for (split "_on_", shift @ARGV) { $c=$bg; $c+=60 if /^[A-Z]/ and $_=lc($_) or s/^bright_//; push @c, (defined $c{$_} ? $c+$c{$_} : $c+$_); $bg+=10; }
@@ -59,39 +82,55 @@ g_args() {
 	typeset -p g_args
 }
 g_ts()    {
-	# takes optional argument '--pre string' to prefix timestamp'ed line (and, importantly, its colours)
+	# takes optional arguments '-2','-c','-C' (must be first) then '--pre string' to prefix timestamp'ed line (and, importantly, its colours)
+	local fd=1;
+	local flags=();  while [[ :-2:-c:-C: == *:${1-}:* ]]; do flags+=( "$1" ); shift; [[ $1 == -2 ]] && fd=2; done
+											    g_want_colour $fd "${flags[*]}" && flags+=( "-c" ) || flags+=( "-C" )
 	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 && ${g_args[$g_idx_offset]} = "--pre" ]]; then g_zsh && shift g_args || unset g_args[0]; shift 2; fi; fi	# just one g_args wanted (throw away 1st/--pre)
-	echo "${g_args[@]}$(g_colr    BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr green $g_ts_host)}" "$@"
+	echo    "${g_args[@]}$(g_colr "${flags[@]}" BLUE   $(date '+%F %T')) ${g_ts_host:+$(g_colr "${flags[@]}" green $g_ts_host)}" "$@"
 }
 g_info()  {
+	local flags=();  while [[ :-c:-C: == *:${1-}:* ]]; do flags+=( "$1" ); shift; done; g_want_colour 1 "${flags[*]}" && flags+=( "-c" ) || flags+=( "-C" )
 	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
-	g_ts "${g_args[@]}" "${g_info_info}$(g_colr -r cyan "$@")"
+	g_ts "${flags[@]}" "${g_args[@]}"                       "${g_info_info}$(g_colr "${flags[@]}" -r cyan   "$@")"
 }
 g_trace() {
+	local flags=();  while [[ :-c:-C: == *:${1-}:* ]]; do flags+=( "$1" ); shift; done; g_want_colour 2 "${flags[*]}" && flags+=( "-c" ) || flags+=( "-C" )
 	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
-	g_ts "${g_args[@]}" "$(g_colr -r blue   TRACE) $(g_colr -r BLACK "$@")" >&2
+	flags+=( "-2" )
+	g_ts "${flags[@]}" "${g_args[@]}" "$(g_colr "${flags[@]}" blue  TRACE) $(g_colr "${flags[@]}" -r BLACK  "$@")" >&2
 }
 g_err()   {
+	local flags=();  while [[ :-c:-C: == *:${1-}:* ]]; do flags+=( "$1" ); shift; done; g_want_colour 2 "${flags[*]}" && flags+=( "-c" ) || flags+=( "-C" )
 	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
-	g_ts "${g_args[@]}" "$(g_colr -r RED    ERROR "$@")" >&2
+	flags+=( "-2" )
+	g_ts "${flags[@]}" "${g_args[@]}" "$(g_colr "${flags[@]}" red   ERROR) $(g_colr "${flags[@]}" -r RED    "$@")" >&2
 }
 g_warn()  {
+	local flags=();  while [[ :-c:-C: == *:${1-}:* ]]; do flags+=( "$1" ); shift; done; g_want_colour 2 "${flags[*]}" && flags+=( "-c" ) || flags+=( "-C" )
 	local g_args=(); if [[ ${1-} == --* ]]; then eval $(g_args "$@"); if [[ ${#g_args[*]} -gt 0 ]]; then shift 2; fi; fi
-	g_ts "${g_args[@]}" "$(g_colr -r YELLOW WARN  "$@")" >&2
+	flags+=( "-2" )
+	g_ts "${flags[@]}" "${g_args[@]}" "$(g_colr "${flags[@]}" yellow WARN) $(g_colr "${flags[@]}" -r YELLOW "$@")" >&2
 }
 g_log()     { g_ts "$@"; }
 g_extro()   { g_err "$1 [line $3] errored - return code $2"; }
-g_opts()    { local res=0; while [[ -n ${1:-} ]]; do
-	if   [[ $1 == colr   ]]; then g_colr_force=1
-	elif [[ $1 == extro  ]]; then trap 'g_extro $0 $? $LINENO' ERR
-	elif [[ $1 ==   host ]]; then g_ts_host=${myHOST:-$(hostname -s)}
-	elif [[ $1 == nohost ]]; then g_ts_host=
-	elif [[ $1 ==   info ]]; then g_info_info="$(g_colr CYAN "INFO ")"
-	elif [[ $1 == noinfo ]]; then g_info_info=
-	elif [[ $1 == strict ]]; then set -euo pipefail
-	else g_die 2 Bad g_opts: $1 || res=$?
-	fi; shift
-	done; return $res
+g_opts()    {
+	local res=0
+	while [[ -n ${1:-} ]]; do
+		if   [[ $1 ==     colr ]]; then g_colr_flag=force
+		elif [[ $1 == autocolr ]]; then g_colr_flag=auto
+		elif [[ $1 ==   nocolr ]]; then g_colr_flag=never
+		elif [[ $1 == extro    ]]; then trap 'g_extro $0 $? $LINENO' ERR
+		elif [[ $1 ==   host   ]]; then g_ts_host=${myHOST:-$(hostname -s)}
+		elif [[ $1 == nohost   ]]; then g_ts_host=
+		elif [[ $1 ==   info   ]]; then g_info_info="$(g_colr CYAN "INFO ")"
+		elif [[ $1 == noinfo   ]]; then g_info_info=
+		elif [[ $1 == strict   ]]; then set -euo pipefail
+		else g_die 2 "Bad g_opts: $1" || res=$?
+		fi
+		shift
+	done
+	return $res
 }
 g_zsh()     { [[ -n ${ZSH_NAME:-} ]]; }
 g_zsh && g_idx_offset=1 || true		# bash vs zsh
