@@ -71,11 +71,14 @@ test-srcup:
 	@! bash -c '$(D_SU); date > $(T)l3.src;             src_up --install --lines $(T)l3.src $(T)l3' && [[ ! -f $(T)l3 ]]	# source, no xref
 	@! bash -c '$(D_SU); echo "pre-ex l4" > $(T)l4.src; src_up           --lines $(T)l4.src $(T)l4' && [[ ! -f $(T)l4 ]]	# no --install
 	@! bash -c '$(D_SU); echo "pre-ex l5" > $(T)l5;     src_up --install --lines $(T)l5.src $(T)l5' && diff -u $(T)l5 <(echo "pre-ex l5")	# no src, tgt exists, no change
-	@l6x=$$'# xref_l6 starts\nthis 1\nthat 2\n# xref_l6 ends\n'; echo -n "$$l6x" > $(T)l6.src;		\
+	@l6x=$$'# xref_l6 starts\nthis 1\nthat 2\n# xref_l6 ends\n'; echo -n "$$l6x" > $(T)l6.src;				\
 	   bash -c '$(D_SU);                                src_up           --lines $(T)l6.src $(T)l6' && [[ ! -f $(T)l6 ]]	# no install, no tgt
-	@l7x=$$'# xref_l7 starts\nthis 1\nthat 2\n# xref_l7 ends\n'; echo -n "$$l7x" > $(T)l7.src;		\
+	@l7x=$$'# xref_l7 starts\nthis 1\nthat 2\n# xref_l7 ends\n'; echo -n "$$l7x" > $(T)l7.src;				\
 	   bash -c '$(D_SU);                                src_up --install --lines $(T)l7.src $(T)l7' && diff -u $(T)l7 <(echo -n "$$l7x")	# no tgt, ok
 	@l8x=$$'# xref_l8 starts\nthis 1\nthat 2\n# xref_l8 ends\n';                      echo -n "$$l8x"   > $(T)l8.src;	\
-	   l8tgt=$$'abc\n# xref_l8 old\nthis 1tgt\nthat 2tgt\n# xref_l8 ends old\ndef\n'; echo -n "$$l8tgt" > $(T)l8;	\
-	   bash -c '$(D_SU);                                src_up --install --lines $(T)l8.src $(T)l8' && diff -u $(T)l8 <(echo -en "abc\ndef\n$${l8x}")	# tgt already has xref, ok
+	   l8tgt=$$'abc\n# xref_l8 old\nthis 1tgt\nthat 2tgt\n# xref_l8_broken ends old\ndef\n'; echo -n "$$l8tgt" > $(T)l8;	\
+	 ! bash -c '$(D_SU);                                src_up           --lines $(T)l8.src $(T)l8' && diff -u $(T)l8 <(echo -n "$${l8tgt}")	# tgt already has xref, but not pair
+	@l9x=$$'# xref_l9 starts\nthis 1\nthat 2\n# xref_l9 ends\n';                      echo -n "$$l9x"   > $(T)l9.src;	\
+	   l9tgt=$$'abc\n# xref_l9 old\nthis 1tgt\nthat 2tgt\n# xref_l9 ends old\ndef\n'; echo -n "$$l9tgt" > $(T)l9;		\
+	   bash -c '$(D_SU);                                src_up --install --lines $(T)l9.src $(T)l9' && diff -u $(T)l9 <(echo -en "abc\ndef\n$${l9x}")	# tgt already has xref, ok
 	@$(D_GL);   g_info "$$(g_colr CYAN done) src_up tests"

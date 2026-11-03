@@ -164,11 +164,12 @@ function src_up() {
 			exit 44
 		fi
 		local xrefs=( $(grep -Eo '\b''xref_[a-zA-Z0-9_]+\b' < "$src") )
-		if [[ ${#xrefs[*]} -ne 2 || ${xrefs[0]} != ${xrefs[1]} ]]; then
+		if [[ ${#xrefs[*]} -ne 2 || ${xrefs[0+$g_idx_offset]} != ${xrefs[1+$g_idx_offset]} ]]; then
 			g_err --pre ": " "no xref_* pair in $src (got ${#xrefs[*]}: ${xrefs[*]})"
 			exit 44
 		fi
-		local xref_src="$(perl -nsE 'print if /$x/.../$x/' -- -x="${xrefs[0]}" < "$src")"
+		local xref="${xrefs[0+$g_idx_offset]}"
+		local xref_src="$(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$src")"
 		if [[ -z "$xref_src" ]]; then
 			g_err --pre ": " "bad xref_* in $src"
 			exit 22
@@ -179,24 +180,41 @@ function src_up() {
 		elif [[ -L "$target" ]]; then
 			g_warn --pre ": " "symlink target $target_bold $(g_colr BLACK from $src)"
 		else
+			# target exists
 			src_up_ensure_diff
-			g_info --pre ": " "checking $target_bold for xref lines with $(g_colr BLACK ${xrefs[0]})"
-			res=0; $src_up_DIFF $DIFF_ARGS -u	--label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="${xrefs[0]}" < "$target") \
-								--label "$src"		<(echo "$xref_src") || res=$?
-			if [[ $res == 1 ]]; then
-				# there is a diff
+			g_info --pre ": " "checking $target_bold for xref lines with $(g_colr BLACK $xref)"
+
+			local xrefs_tgt=( $(grep -Eo '\b'$xref'\b' < "$target") )
+			local do_lines=
+			if   [[ ${#xrefs_tgt[*]} -eq 2 ]]; then		# need none or two of $xref in target
+				# do the xref chunks differ?
+				res=0; diff -q	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
+						<(echo "$xref_src") || res=$?
+				[[ $res -eq 1 ]] && do_lines=1
+			elif [[ ${#xrefs_tgt[*]} -eq 0 ]]; then		# need none or two of $xref in target
+				do_lines=1
+			else
+				# odd number of $xref
+				g_err --pre ": " "bad xref_* pair in $target (got ${#xrefs_tgt[*]}: ${xrefs_tgt[*]})"
+				exit 44
+			fi
+
+			if [[ -n "$do_lines" ]]; then
+				# there is a diff, so remove existing(?) and append new
 				if [[ -n "$do_install" ]]; then
-					echo ": $(g_colr CYAN DIFF $src) Copying to $target_bold"
+					echo ": $(g_colr CYAN DIFF $src) Copying '$xref' chunk to $target_bold"
 					local target_noo=${TMPDIR-/tmp}/sh_init_tgt.noo.$$
 					{
-						perl -nsE 'print unless /$x/.../$x/' -- -x="${xrefs[0]}" < "$target"
-						cat "$src"
+						perl -nsE 'print unless /$x/.../$x/' -- -x="$xref" < "$target"	# keep rest of target, except xref_* block
+						cat "$src"							# add $src block to above
 					} > "$target_noo"
-					res=0; $src_up_DIFF $DIFF_ARGS -u "$target" --label tmp-chunk "$target_noo"	|| res=$?
+					res=0; $src_up_DIFF $DIFF_ARGS -u --label "$target" "$target" --label "$target-plus-$xref" "$target_noo"	|| res=$?
 					if [[ $res == 1 ]]; then
-						if ! cat "$target_noo" >| "$target"; then
-							rm "$target_noo"
-							exit 55
+						if [[ -z $confirm ]] || yorn	"install '$xref' chunk to $target_bold"; then
+							if ! cat "$target_noo" >| "$target"; then
+								rm "$target_noo"
+								exit 55
+							fi
 						fi
 						rm "$target_noo"
 					else
@@ -235,8 +253,9 @@ function src_up() {
 			fi
 			[[ -z "$verbose" ]] || echo ": $(\ls -l "$target")"
 		else
-			echo ":"	"$this_install	-m \"$mode\" \"$src\" \"$target\"" || exit 4
+			echo ":"			"$this_install -m \"$mode\" \"$src\""   "\"$target\""
 		fi
 	fi
 }
+
 # vim: filetype=bash :
