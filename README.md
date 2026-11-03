@@ -78,8 +78,12 @@ Handles symlinks in a more verbose/clear manner.
 
 ```shell
 source src_up.sh
-src_up { --0755 | --install | --lines | --ln $ln_to | --mkdir | --verbose } [ -- ] $src $target
+src_up { --0755 | --batch | --install | --lines | --ln $ln_to | --mkdir | --verbose } [ -- ] $src $target
 ```
+
+- `--install` - install changes, not just a no-op
+- `--batch` - do not prompt for confirmation
+- `--lines` - the source file must have lines `.. xref_foo ..\n ... \n ... xref_foo ..`, these are appended to target (any existing `xref_foo` block is removed)
 
 ## Licence
 

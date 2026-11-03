@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 2.1.20260714
+# version: 2.1.20261103
 # for licence/copyright, see: https://codeberg.org/gedge/misc
 
 if [[ -f lib/g_lib.sh && -f lib/src_up.sh && -d .git ]]; then
@@ -38,6 +38,10 @@ function src_up_ensure_install() {
 	src_up_ROOT_INSTALL="$src_up_INSTALL -o '$USER' -g '$GROUP'"
 }
 
+function mk_safe() {
+	sed 's![^-a-zA-Z0-9 /_.,@%:]!\\&!g' <<<"$1" | tr -d '\n'
+}
+
 # do_diff returns 1 when diff returns 1 (the files differ)
 function do_diff() {
 	local verbose=
@@ -66,7 +70,7 @@ function do_diff() {
 			$src_up_DIFF $DIFF_ARGS -u "$target" "$src"
 		fi
 	elif [[ $res -ne 0 ]]; then
-		g_err --pre ": " "Bad diff -u $target_bold $src"
+		g_err --pre ": " "bad diff -u $target_bold $src"
 		exit $res
 	else
 		[[ -n "$verbose" ]] && g_info --pre ": " "No diff -u $target_bold $src"
@@ -74,15 +78,18 @@ function do_diff() {
 	return $res
 }
 
-# src_up { --0755 | --install | --lines | --ln $ln_to | --mkdir | --verbose } [ -- ] $src $target
+# src_up { --0755 | --batch | --install | --lines | --ln $ln_to | --mkdir | --verbose } [ -- ] $src $target
+# --lines removes any "blah xref_ook blah\n...\nfoo xref_ook foo\n" in src, and appends to tgt the new xref_ook lines in src
 function src_up() {
-	local res=0 do_install= do_diff=1 do_cp= mode= lines= mk_dir= verbose=
+	local res=0 do_install= do_diff=1 do_cp= mode= lines= mk_dir= verbose= confirm=1
 	while [[ $1 == --* ]]; do
 		local arg=$1; shift
 		if   [[ $arg == --           ]]; then
 			break
 		elif [[ $arg =~ '^--[0-9]+$' ]]; then
 			mode=${arg#--}
+		elif [[ $arg == --batch    ]]; then
+			confirm=
 		elif [[ $arg == --install    ]]; then
 			do_install=1
 		elif [[ $arg == --lines      ]]; then
@@ -108,8 +115,12 @@ function src_up() {
 				g_warn "No target dir for $target_bold"
 				return 2
 			fi
-			yorn "run: $(g_colr MAGENTA "mkdir -p $dir")" && \
-				{ mkdir -p "$dir" || exit 1; }
+			if [[ -n $confirm ]]; then
+				yorn "run: $(g_colr MAGENTA "mkdir -p $dir")" && \
+					{	mkdir -p "$dir" || exit 1; }
+			else
+						mkdir -p "$dir" || exit 1
+			fi
 		fi
 		if [[ ! -w "$dir" ]]; then g_warn "Cannot write to $dir"; fi
 	fi
@@ -136,35 +147,41 @@ function src_up() {
 			[[ $res -eq 1 ]] && do_cp=cp
 		fi
 		if [[ -n $do_cp ]]; then
-			local pre_rm=; if [[ $do_cp == rm* ]] && pre_rm="rm \"$target\" &&"
+			local pre_rm=; [[ $do_cp == rm* ]] && pre_rm="rm \"$target\" &&"
 			if [[ -n "$do_install" ]]; then
 				g_info --pre ": " "$(g_colr MAGENTA Symlinking $src) from $target_bold to $ln_to"
-				eval $pre_rm              ln -s "$ln_to" "$target" || exit 4
+				local target_safe="$(mk_safe "$target")"
+				local ln_to_safe="$(mk_safe "$ln_to")"
+				eval $pre_rm              ln -s "$ln_to_safe" "$target_safe" || exit 4
 			else
 				echo "$pre_rm${pre_rm:+ }"ln -s "$ln_to" "$target"
 			fi
 			do_cp=
 		fi
 	elif [[ -n $lines ]]; then
+		if [[ ! -f "$src" ]]; then
+			g_err --pre ": " "no file: $src"
+			exit 44
+		fi
+		local xrefs=( $(grep -o xref_'[a-zA-Z0-9_]*' < "$src" | sort) )
+		if [[ ${#xrefs[*]} -ne 2 || ${xrefs[0]} != ${xrefs[1]} ]]; then
+			g_err --pre ": " "no xref_* pair in $src (got: ${xrefs[*]})"
+			exit 44
+		fi
+		local xref_src="$(perl -nsE 'print if /$x/.../$x/' -- -x="${xrefs[0]}" < "$src")"
+		if [[ -z "$xref_src" ]]; then
+			g_err --pre ": " "bad xref_* in $src"
+			exit 22
+		fi
 		if [[ ! -e "$target" ]]; then
-			g_info --pre ": " "No file $target_bold for appending dotlines line - will copy"
+			g_info --pre ": " "no file $target_bold for appending xref lines - will copy"
 			do_cp=cp
 		elif [[ -L "$target" ]]; then
-			g_warn --pre ": " "Symlink target $target_bold $(g_colr BLACK from $src)"
+			g_warn --pre ": " "symlink target $target_bold $(g_colr BLACK from $src)"
 		else
-			local xref=$(grep -o xref_'[^ ]*' < "$src" | sort -u)
-			if [[ -z "$xref" ]]; then
-				g_err --pre ": " "No xref $src"
-				exit 44
-			fi
-			local xref_src=$(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$src")
-			if [[ -z "$xref_src" ]]; then
-				g_err --pre ": " "Bad xref $src"
-				exit 22
-			fi
 			src_up_ensure_diff
-			g_info --pre ": " "Checking $target_bold for dotlines lines with $(g_colr BLACK $xref)"
-			res=0; $src_up_DIFF $DIFF_ARGS -u	--label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="$xref" < "$target") \
+			g_info --pre ": " "checking $target_bold for xref lines with $(g_colr BLACK ${xrefs[0]})"
+			res=0; $src_up_DIFF $DIFF_ARGS -u	--label "$target"	<(perl -nsE 'print if /$x/.../$x/' -- -x="${xrefs[0]}" < "$target") \
 								--label "$src"		<(echo "$xref_src") || res=$?
 			if [[ $res == 1 ]]; then
 				# there is a diff
@@ -172,7 +189,7 @@ function src_up() {
 					echo ": $(g_colr CYAN DIFF $src) Copying to $target_bold"
 					local target_noo=${TMPDIR-/tmp}/sh_init_tgt.noo.$$
 					{
-						perl -nsE 'print unless /$x/.../$x/' -- -x="$xref" < "$target"
+						perl -nsE 'print unless /$x/.../$x/' -- -x="${xrefs[0]}" < "$target"
 						cat "$src"
 					} > "$target_noo"
 					res=0; $src_up_DIFF $DIFF_ARGS -u "$target" --label tmp-chunk "$target_noo"	|| res=$?
@@ -191,7 +208,7 @@ function src_up() {
 					echo ": $(g_colr CYAN DIFF $src) $target"
 				fi
 			elif [[ $res != 0 ]]; then
-				g_err --pre ": " "Bad diff: $src"
+				g_err --pre ": " "bad diff: $src"
 				exit $res
 			fi
 		fi
@@ -209,10 +226,13 @@ function src_up() {
 		local this_install=$src_up_INSTALL
 		[[ $USER == root ]] && this_install=$src_up_ROOT_INSTALL
 		if [[ -n "$do_install" ]]; then
-			if [[ -z $mode ]]; then mode=0$(eval $STAT \"$src\"); fi
+			local target_safe="$(mk_safe "$target")"
+			local src_safe="$(mk_safe "$src")"
+			if [[ -z $mode ]]; then mode=0$(eval $STAT \"$src_safe\"); fi
 			echo ": $(g_colr MAGENTA Copying $src) to $target_bold $(g_colr BLACK "(mode: $mode)")"
-			yorn		$this_install	-m \"$mode\" \"$src\" \"$target\" && \
-				{ eval	$this_install	-m \"$mode\" \"$src\" \"$target\" || exit 4; }
+			if [[ -z $confirm ]] || yorn	$this_install -m \"$mode\" \"$src_safe\" \"$target_safe\"; then
+				{ eval			$this_install -m \"$mode\" \"$src_safe\" \"$target_safe\" || exit 4; }
+			fi
 			[[ -z "$verbose" ]] || echo ": $(\ls -l "$target")"
 		else
 			echo ":"	"$this_install	-m \"$mode\" \"$src\" \"$target\"" || exit 4
