@@ -163,9 +163,9 @@ function src_up() {
 			g_err --pre ": " "no file: $src"
 			exit 44
 		fi
-		local xrefs=( $(grep -o xref_'[a-zA-Z0-9_]*' < "$src" | sort) )
+		local xrefs=( $(grep -Eo '\b''xref_[a-zA-Z0-9_]+\b' < "$src") )
 		if [[ ${#xrefs[*]} -ne 2 || ${xrefs[0]} != ${xrefs[1]} ]]; then
-			g_err --pre ": " "no xref_* pair in $src (got: ${xrefs[*]})"
+			g_err --pre ": " "no xref_* pair in $src (got ${#xrefs[*]}: ${xrefs[*]})"
 			exit 44
 		fi
 		local xref_src="$(perl -nsE 'print if /$x/.../$x/' -- -x="${xrefs[0]}" < "$src")"
