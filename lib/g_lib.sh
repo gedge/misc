@@ -1,6 +1,6 @@
 #!/bin/false dotme
 
-# version: 1.0.20261031
+# version: 1.0.20261104
 # for licence/copyright, see: https://codeberg.org/gedge/misc
 
 # configure options with the command:
@@ -173,6 +173,7 @@ g_yorn_prompt() {
 	if g_zsh; then IFS= read "$@" yorn\?"$prompt "      || res=$?
 	else           IFS= read "$@" -p    "$prompt " yorn || res=$?
 	fi
+	[[ -t 1 ]] || return $res
 	(( $(g_col) <= 1 )) || echo
 	return $res
 }
