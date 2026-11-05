@@ -134,7 +134,7 @@ g_opts()    {
 }
 g_zsh()     { [[ -n ${ZSH_NAME:-} ]]; }
 g_zsh && g_idx_offset=1 || true		# bash vs zsh
-g_row_col() { local X= R= C=; if g_zsh; then IFS=';[' read -sdR X\?$'\E[6n' R C; else IFS=';[' read -sdR -p $'\E[6n' X R C; fi; echo $R $C; }
+g_row_col() { local X= R=1 C=1; if [[ $- != *x* ]]; then if g_zsh; then IFS=';[' read -sdR X\?$'\E[6n' R C; else IFS=';[' read -sdR -p $'\E[6n' X R C; fi; fi; echo $R $C; }
 g_col()     { local row_col="$(g_row_col)"; row_col=${row_col#* }; echo ${row_col:-0}; }
 g_cont()    { local res=$1 arg=--no res_txt=; shift; if [[ $res == -y ]]; then arg=; res=$1; shift; fi; if [[ $res != 0 ]]; then res_txt=" after $(g_colr bright_white_on_red error code $res)"; else arg=; fi; yorn --ignore-all $arg "$@" "Continue$res_txt" || g_exit $res; }
 
